@@ -1,12 +1,6 @@
 import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fastifyMongo from '@fastify/mongodb';
 
-// declare module "fastify" {
-//     interface FastifyRequest {
-//       user?: string; // Add a `user` property of type string
-//     }
-//   }
-
 const fastify = Fastify({
   logger: {
     transport: {
@@ -16,6 +10,17 @@ const fastify = Fastify({
 });
 
 async function  userRoutes(fastify: FastifyInstance) {
+
+    fastify
+    .addHook('onRequest', async () => {
+        fastify.log.info("Got a request")
+    });
+    
+    // fastify
+    // .addHook('onResponse', async ( request, reply: FastifyReply) => {
+    //     fastify.log.info(`Responding: ${reply.getResponseTime()}`);
+    // });
+
     fastify.get("/", {
         handler: async (
           request: FastifyRequest<{
@@ -39,6 +44,10 @@ async function  userRoutes(fastify: FastifyInstance) {
       fastify.log.info("User routes registered")
 
 }
+
+fastify.get('/err', () => {
+    return { message: "hello"};
+})
 
 // async function dbConnector(fastify: FastifyInstance, options: any) {
 //     fastify.register(fastifyMongo, {
@@ -91,7 +100,9 @@ async function main() {
   });
 }
 
-["SIGINT", "SIGTERM"].forEach((signal) => {
+
+
+    ["SIGINT", "SIGTERM"].forEach((signal) => {
   process.on(signal, async () => {
     await fastify.close();
 
