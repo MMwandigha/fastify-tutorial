@@ -21,7 +21,30 @@ async function  userRoutes(fastify: FastifyInstance) {
     //     fastify.log.info(`Responding: ${reply.getResponseTime()}`);
     // });
 
-    fastify.get("/", {
+    fastify.addSchema({
+        $id: "createUserSchema",
+        type: "object",
+        required: ["name"],
+        properties: {
+            name: {
+                type: "string"
+            }
+        }
+    })
+
+    fastify.post("/", {
+        schema: {
+            body: {$ref: "createUserSchema#"},
+            response: {
+                201: {
+                    type: 'object',
+                    properties: {
+                        name: {type: 'string'},
+                        age: { type: 'number'}
+                    }
+                }
+            }
+        },
         handler: async (
           request: FastifyRequest<{
             Body: {
@@ -37,7 +60,7 @@ async function  userRoutes(fastify: FastifyInstance) {
         const jwt = fastify.signJwt();
         const verified = fastify.verifyJwt();
       
-          return reply.code(201).send({jwt, verified} );
+          return reply.code(201).send( body );
         },
       });
 
