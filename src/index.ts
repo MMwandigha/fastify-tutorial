@@ -1,6 +1,12 @@
 import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fastifyMongo from '@fastify/mongodb';
 
+// declare module "fastify" {
+//     interface FastifyRequest {
+//       user?: string; // Add a `user` property of type string
+//     }
+//   }
+
 const fastify = Fastify({
   logger: {
     transport: {
@@ -10,7 +16,7 @@ const fastify = Fastify({
 });
 
 async function  userRoutes(fastify: FastifyInstance) {
-    fastify.post("/", {
+    fastify.get("/", {
         handler: async (
           request: FastifyRequest<{
             Body: {
@@ -22,9 +28,11 @@ async function  userRoutes(fastify: FastifyInstance) {
         ) => {
           const body = request.body;
       
-          console.log({ body });
+        //   console.log({ body });
+        const jwt = fastify.signJwt();
+        const verified = fastify.verifyJwt();
       
-          return reply.code(201).send(body);
+          return reply.code(201).send({jwt, verified} );
         },
       });
 
@@ -32,16 +40,49 @@ async function  userRoutes(fastify: FastifyInstance) {
 
 }
 
-async function dbConnector(fastify: FastifyInstance, options: any) {
-    fastify.register(fastifyMongo, {
-        url: "mongodb://localhost:27017/fastify",
-    })
-    fastify.log.info("Connected to database", options)
+// async function dbConnector(fastify: FastifyInstance, options: any) {
+//     fastify.register(fastifyMongo, {
+//         url: "mongodb://localhost:27017/fastify",
+//     })
+//     fastify.log.info("Connected to database", options)
+// }
+declare module "fastify" {
+    export interface FastifyRequest {
+        user: {
+            name: string;
+        }
+    }
+    export interface FastifyInstance {
+        signJwt: () => string;
+        verifyJwt: () => {
+            name: string
+        }
+    }
 }
 
-fastify.register(dbConnector)
+fastify.decorateRequest("user", null as unknown as { name:string});
 
-fastify.register(userRoutes, {prefix: "/api/users"});
+fastify.addHook(
+    "preHandler",
+    async  (request: FastifyRequest, reply: FastifyReply) => {
+        request.user = {
+            name: "Bob Jones",
+        }
+    });
+
+fastify.decorate('signJwt', () => {
+    return "Signed JWT";
+})
+
+fastify.decorate('verifyJwt', () => {
+    return {
+        name: 'Tom'
+    }
+})
+
+// fastify.register(dbConnector)
+
+fastify.register(userRoutes, {prefix: "/"});
 
 async function main() {
   await fastify.listen({
